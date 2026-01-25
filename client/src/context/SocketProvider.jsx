@@ -1,9 +1,6 @@
-import React, { createContext } from "react";
-import { useContext } from "react";
-import { useMemo } from "react";
+import React, { createContext, useContext, useMemo } from "react";
 import io from "socket.io-client";
 
-// context create
 const SocketContext = createContext(null);
 
 export const useSocket = () => {
@@ -11,28 +8,25 @@ export const useSocket = () => {
   return socket;
 };
 
-console.log(import.meta.env.VITE_API_BASE_URL);
-
-// Provider function to provide socketContext value to children
 export const SocketProvider = ({ children }) => {
   const socket = useMemo(() => {
-    const envUrl = import.meta.env.VITE_API_BASE_URL;
+    // 1. Ưu tiên biến môi trường từ Render (VITE_SERVER_URL)
+    // 2. Fallback sang localhost nếu chạy local
+    const serverUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:8000";
 
-    // Tuyệt chiêu: Tự động nhận diện IP để Demo không bị lỗi
-    // Nếu URL đang là localhost hoặc một IP LAN, ta sẽ ưu tiên dùng hostname hiện tại của trình duyệt
-    const isLocal = envUrl.includes('localhost') || envUrl.includes('127.0.0.1') || envUrl.match(/\d+\.\d+\.\d+\.\d+/);
+    console.log("🔌 Connecting to Socket Server:", serverUrl);
 
-    let socketUrl = envUrl;
-    if (isLocal) {
-      const dynamicHostname = window.location.hostname;
-      socketUrl = `http://${dynamicHostname}:8000`;
-      console.log("🔗 Dynamic Socket Connection to:", socketUrl);
-    }
-
-    return io(socketUrl);
+    // Tạo connection với retry logic
+    return io(serverUrl, {
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      autoConnect: true
+    });
   }, []);
 
   return (
-    <SocketContext.Provider value={socket}>{children}</SocketContext.Provider>
+    <SocketContext.Provider value={socket}>
+      {children}
+    </SocketContext.Provider>
   );
 };
