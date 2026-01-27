@@ -16,11 +16,13 @@ export const SocketProvider = ({ children }) => {
 
     console.log("🔌 Connecting to Socket Server:", serverUrl);
 
-    // Tạo connection với retry logic
+    // Tạo connection với retry logic & transports rõ ràng
     return io(serverUrl, {
-      reconnectionAttempts: 5,
+      reconnectionAttempts: 10,
       reconnectionDelay: 1000,
-      autoConnect: true
+      autoConnect: true,
+      transports: ['websocket', 'polling'], // Đảm bảo khớp với server
+      withCredentials: true // Quan trọng cho CORS
     });
   }, []);
 

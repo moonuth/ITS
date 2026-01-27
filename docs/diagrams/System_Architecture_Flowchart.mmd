@@ -1,0 +1,29 @@
+graph TD
+    Start([Bắt đầu]) --> CheckAuth{Đã nhập Mail/Room?}
+    CheckAuth -- No --> Input[Nhập Email & Room ID]
+    Input --> Join[Gửi yêu cầu Join Room]
+    CheckAuth -- Yes --> Connect[Kết nối Socket]
+    
+    Join --> ServerCheck{Room có bị khóa?}
+    
+    ServerCheck -- Yes --> RequestAccess[Gửi Knock Request]
+    RequestAccess --> HostApprove{Host chấp nhận?}
+    HostApprove -- No --> Deny[Hiện thông báo Từ chối] --> End([Kết thúc])
+    HostApprove -- Yes --> SetupRPC[Khởi tạo Peer Connection]
+    
+    ServerCheck -- No --> SetupRPC
+    
+    SetupRPC --> GetMedia[Lấy Camera/Mic & Stream]
+    GetMedia --> Handshake[Trao đổi SDP & ICE]
+    Handshake --> P2PConnected{Kết nối P2P?}
+    
+    P2PConnected -- Yes --> Features[Sẵn sàng sử dụng]
+    Features --> VideoCall[Video Call]
+    Features --> Chat[Chat Real-time]
+    Features --> FileShare[Gửi File P2P]
+    Features --> ScreenShare[Share màn hình]
+    
+    FileShare --> CleanRAM[Giải phóng RAM]
+    ScreenShare --> SwitchTrack[Thay thế Video Track]
+    
+    Features --> Leave[Rời phòng] --> End

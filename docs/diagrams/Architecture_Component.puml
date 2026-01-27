@@ -1,0 +1,33 @@
+@startuml
+skinparam componentStyle uml2
+
+package "Client Side" {
+    [Browser A] as A
+    [Browser B] as B
+}
+
+package "Server Side" {
+    [Signaling Server\n(Socket.IO)] as Sig
+    [STUN/TURN Server\n(NAT Traversal)] as STUN
+}
+
+' Các đường kết nối
+A ..> Sig : 1. WebSocket\n(Signaling)
+B ..> Sig : 1. WebSocket\n(Signaling)
+
+A ..> STUN : 2. Get Public IP\n(ICE Candidates)
+B ..> STUN : 2. Get Public IP\n(ICE Candidates)
+
+A <-> B : 3. P2P Connection\n(Media & Data Stream)
+
+note right of Sig
+  Signaling Server chỉ dùng để
+  trao đổi thông tin ban đầu (SDP).
+  Không truyền Video/Audio.
+end note
+
+note right of STUN
+  Giúp Client vượt qua NAT
+  để tìm thấy nhau trên Internet.
+end note
+@enduml

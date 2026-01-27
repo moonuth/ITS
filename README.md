@@ -55,11 +55,49 @@ npm run dev
 ```
 *Truy cập ứng dụng tại: `http://localhost:5173`*
 
-## 📚 Kiến thức mạng áp dụng
-*   **Signaling:** Sử dụng WebSockets (Socket.io) để trao đổi SDP Offer/Answer và ICE Candidates.
-*   **OSI Layer 4 & 7:** Sử dụng TCP (Signaling) và UDP (Media Transport).
-*   **NAT Traversal:** Sử dụng giao thức ICE để thiết lập kết nối xuyên qua các loại mạng khác nhau.
-*   **Serialization:** Chuyển đổi tệp tin sang ArrayBuffer để truyền tải qua kênh dữ liệu P2P.
+---
+
+## 🌍 Hướng dẫn Deploy (Render)
+
+Dự án đã được cấu hình tương thích để deploy miễn phí trên [Render.com](https://render.com).
+
+### Bước 1: Chuẩn bị
+1. Fork dự án này về GitHub cá nhân của bạn.
+2. Đăng ký tài khoản Render và kết nối với GitHub.
+
+### Bước 2: Deploy Server (Back-end)
+1. Tạo **Web Service** mới trên Render -> Chọn repo github.
+2. Cấu hình:
+   - **Root Directory:** `server`
+   - **Build Command:** `npm install`
+   - **Start Command:** `npm start`
+3. Bấm Deploy. Sau khi xong, copy URL của Server (ví dụ: `https://my-webrtc.onrender.com`).
+
+### Bước 3: Deploy Client (Front-end)
+1. Tạo **Static Site** mới trên Render.
+2. Cấu hình:
+   - **Root Directory:** `client`
+   - **Build Command:** `npm install && npm run build`
+   - **Publish Directory:** `dist`
+3. Vào tab **Environment**, thêm biến môi trường:
+   - Key: `VITE_SERVER_URL`
+   - Value: `URL-Server-Của-Bạn` (Link copy ở bước 2)
+4. Bấm **Create Static Site**.
+
+---
+
+## 📸 Hình ảnh Demo (Screenshots)
+
+| Màn hình chờ (Lobby) | Màn hình gọi (Video Call) |
+|:---:|:---:|
+| <img src="./screenshots/lobby.png" width="400" alt="Lobby Screen" /> | <img src="./screenshots/room.png" width="400" alt="Room Screen" /> |
+
+| Tính năng Chat & Gửi File | Chia sẻ màn hình |
+|:---:|:---:|
+| <img src="./screenshots/chat_file.png" width="400" alt="Chat & File" /> | <img src="./screenshots/share.png" width="400" alt="Screen Share" /> |
+
+> *Lưu ý: Các hình ảnh trên được lưu trong thư mục `screenshots/` của dự án.*
 
 ---
 © 2026 - Nhóm 05 - HCMC University of Technology and Education.
+

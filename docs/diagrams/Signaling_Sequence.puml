@@ -1,0 +1,47 @@
+@startuml
+skinparam backgroundColor white
+skinparam handwritten false
+skinparam sequenceMessageAlign center
+
+actor "User A (Caller)" as A
+participant "Signaling Server\n(Socket.IO)" as S
+actor "User B (Callee)" as B
+
+== Giai đoạn 1: Gia nhập phòng (Joining) ==
+A -> S: Emit "room:join" {email, roomID}
+B -> S: Emit "room:join" {email, roomID}
+S -> A: Emit "room:joined" {email: A}
+S -> B: Emit "room:joined" {email: B}
+S -> A: Emit "user:joined" {email: B}
+S -> B: Emit "user:joined" {email: A}
+
+== Giai đoạn 2: Khởi tạo cuộc gọi (Offer) ==
+A -> A: Create RTCPeerConnection
+A -> A: Create Offer (SDP)
+A -> A: Set LocalDescription(Offer)
+A -> S: Emit "user:call" {to: B, offer}
+S -> B: Forward "incoming:call" {from: A, offer}
+
+== Giai đoạn 3: Trả lời (Answer) ==
+B -> B: Set RemoteDescription(Offer)
+B -> B: Create RTCPeerConnection
+B -> B: Create Answer (SDP)
+B -> B: Set LocalDescription(Answer)
+B -> S: Emit "call:accepted" {to: A, answer}
+S -> A: Forward "call:accepted" {from: B, answer}
+A -> A: Set RemoteDescription(Answer)
+
+== Giai đoạn 4: Trao đổi ứng viên ICE (Traversing NAT) ==
+note over A, B: ICE Candidates exchange typically happens in parallel\nwith Offer/Answer exchange
+A -> S: Emit "peer:candidate" {candidate}
+S -> B: Forward "peer:candidate"
+B -> B: AddIceCandidate()
+
+B -> S: Emit "peer:candidate" {candidate}
+S -> A: Forward "peer:candidate"
+A -> A: AddIceCandidate()
+
+== Giai đoạn 5: Kết nối P2P (Peer-to-Peer) ==
+A <-> B: <color:red>Direct Media Stream (Video/Audio)</color>
+A <-> B: <color:blue>RTCDataChannel (Chat/File Transfer)</color>
+@enduml
