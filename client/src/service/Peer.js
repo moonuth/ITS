@@ -8,7 +8,10 @@ class PeerService {
 
         // 🔥 YOUR AZURE TURN SERVER (Private & Fast)
         {
-          urls: "turn:20.197.12.68:3478",
+          urls: [
+            "turn:20.197.12.68:3478?transport=udp",
+            "turn:20.197.12.68:3478?transport=tcp"
+          ],
           username: "webrtc",
           credential: "123456"
         }
