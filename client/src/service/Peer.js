@@ -6,14 +6,27 @@ class PeerService {
         { urls: "stun:stun.l.google.com:19302" },
         { urls: "stun:global.stun.twilio.com:3478" },
 
-        // 🔥 YOUR AZURE TURN SERVER (Private & Fast)
+
+        // 🔥 METERED OPENRELAY (Public, Free, Port 80/443 - Không bị chặn)
         {
-          urls: [
-            "turn:20.197.12.68:3478?transport=udp",
-            "turn:20.197.12.68:3478?transport=tcp"
-          ],
-          username: "webrtc",
-          credential: "123456"
+          urls: "turn:a.relay.metered.ca:80",
+          username: "openrelayproject",
+          credential: "openrelayproject",
+        },
+        {
+          urls: "turn:a.relay.metered.ca:80?transport=tcp",
+          username: "openrelayproject",
+          credential: "openrelayproject",
+        },
+        {
+          urls: "turn:a.relay.metered.ca:443",
+          username: "openrelayproject",
+          credential: "openrelayproject",
+        },
+        {
+          urls: "turn:a.relay.metered.ca:443?transport=tcp",
+          username: "openrelayproject",
+          credential: "openrelayproject",
         }
       ],
       iceCandidatePoolSize: 10,
