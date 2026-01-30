@@ -2,24 +2,36 @@ class PeerService {
   constructor() {
     this.peer = new RTCPeerConnection({
       iceServers: [
-        // Google STUN
+        // STUN Google (tăng độ phủ sóng)
         { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:stun1.l.google.com:19302" },
+        { urls: "stun:stun2.l.google.com:19302" },
 
-        // 🔥 METERED (Port 80/443)
+        // 🔥 OPENRELAY METERED (TỐI ƯU NHẤT - FREE, quota cao, ổn định cho WAN)
         {
-          urls: "turn:a.relay.metered.ca:80",
+          urls: "turn:openrelay.metered.ca:80",
           username: "openrelayproject",
           credential: "openrelayproject",
         },
         {
-          urls: "turn:a.relay.metered.ca:443",
+          urls: "turn:openrelay.metered.ca:443",
+          username: "openrelayproject",
+          credential: "openrelayproject",
+        },
+        {
+          urls: "turn:openrelay.metered.ca:443?transport=tcp",  // TCP fallback cho firewall chặn UDP
           username: "openrelayproject",
           credential: "openrelayproject",
         },
 
-        // 🔥 TWILIO TURN (Backup)
+        // 🔥 TWILIO TURN (Backup - giữ credential của bạn)
         {
           urls: "turn:global.turn.twilio.com:3478?transport=udp",
+          username: "f4b4035eaa76f4a55de5f4351567653ee4ff6fa97b50b6b334fcc1be9c27212d",
+          credential: "w1uxM55V9yVoqyVFjt+mxDBV0F87AUCemaYVQGxsPLg="
+        },
+        {
+          urls: "turn:global.turn.twilio.com:3478?transport=tcp",
           username: "f4b4035eaa76f4a55de5f4351567653ee4ff6fa97b50b6b334fcc1be9c27212d",
           credential: "w1uxM55V9yVoqyVFjt+mxDBV0F87AUCemaYVQGxsPLg="
         }
@@ -30,26 +42,26 @@ class PeerService {
       rtcpMuxPolicy: 'require'
     });
 
-    // 🔍 DEBUG: Log ICE servers config
+    // 🔍 DEBUG: Log cấu hình ICE
     console.log("🔧 ICE Servers configured:", this.peer.getConfiguration().iceServers);
 
-    // 🔍 DEBUG: Monitor ICE connection state
+    // 🔍 Monitor ICE connection state
     this.peer.oniceconnectionstatechange = () => {
       console.log(`🧊 ICE Connection State: ${this.peer.iceConnectionState}`);
       if (this.peer.iceConnectionState === 'failed') {
         console.error('❌ ICE Connection FAILED - TURN servers may not be working');
       }
-      if (this.peer.iceConnectionState === 'connected') {
-        console.log('✅ ICE Connection SUCCESS!');
+      if (this.peer.iceConnectionState === 'connected' || this.peer.iceConnectionState === 'completed') {
+        console.log('✅ ICE Connection SUCCESS! (WAN có thể đã dùng relay)');
       }
     };
 
-    // 🔍 DEBUG: Monitor ICE gathering state
+    // 🔍 Monitor ICE gathering state
     this.peer.onicegatheringstatechange = () => {
       console.log(`📡 ICE Gathering State: ${this.peer.iceGatheringState}`);
     };
 
-    // 🔍 DEBUG: Log all ICE candidates
+    // 🔍 Log all ICE candidates (xem có relay không)
     this.peer.onicecandidate = (event) => {
       if (event.candidate) {
         const c = event.candidate;
@@ -59,7 +71,8 @@ class PeerService {
           address: c.address || c.candidate.split(' ')[4],
           port: c.port,
           relatedAddress: c.relatedAddress,
-          candidate: c.candidate
+          candidate: c.candidate,
+          relay: c.type === 'relay' ? 'YES (USING TURN)' : 'NO'
         });
       } else {
         console.log('✅ ICE Gathering complete');
@@ -74,7 +87,6 @@ class PeerService {
 
   // Create offer
   async getOffer() {
-    // Chỉ tạo offer khi stable hoặc ban đầu
     if (this.peer.signalingState !== "stable" && this.peer.signalingState !== "have-local-offer") return;
 
     const offer = await this.peer.createOffer({
@@ -87,7 +99,6 @@ class PeerService {
 
   // Create answer
   async getAnswer(offer) {
-    // Đảm bảo setRemote trước
     if (this.peer.signalingState !== "have-remote-offer") {
       await this.peer.setRemoteDescription(new RTCSessionDescription(offer));
     }
@@ -108,7 +119,7 @@ class PeerService {
     }
   }
 
-  // Add ICE candidate with buffer safety (#13 - Fix lỗi Timing)
+  // Add ICE candidate with buffer safety
   async addIceCandidate(candidate) {
     if (this.isRemoteSet && this.peer.remoteDescription) {
       try {
@@ -117,7 +128,6 @@ class PeerService {
         console.error("Error adding ICE candidate:", error);
       }
     } else {
-      // Nếu remote description chưa set, queue lại candidate
       this.iceCandidateQueue.push(candidate);
     }
   }
