@@ -2,19 +2,12 @@ class PeerService {
   constructor() {
     this.peer = new RTCPeerConnection({
       iceServers: [
-        // Google STUN (Free & Fast)
+        // Google STUN
         { urls: "stun:stun.l.google.com:19302" },
-        { urls: "stun:global.stun.twilio.com:3478" },
 
-
-        // 🔥 METERED OPENRELAY (Public, Free, Port 80/443 - Không bị chặn)
+        // 🔥 METERED (Port 80/443)
         {
           urls: "turn:a.relay.metered.ca:80",
-          username: "openrelayproject",
-          credential: "openrelayproject",
-        },
-        {
-          urls: "turn:a.relay.metered.ca:80?transport=tcp",
           username: "openrelayproject",
           credential: "openrelayproject",
         },
@@ -23,10 +16,12 @@ class PeerService {
           username: "openrelayproject",
           credential: "openrelayproject",
         },
+
+        // 🔥 TWILIO TURN (Backup)
         {
-          urls: "turn:a.relay.metered.ca:443?transport=tcp",
-          username: "openrelayproject",
-          credential: "openrelayproject",
+          urls: "turn:global.turn.twilio.com:3478?transport=udp",
+          username: "f4b4035eaa76f4a55de5f4351567653ee4ff6fa97b50b6b334fcc1be9c27212d",
+          credential: "w1uxM55V9yVoqyVFjt+mxDBV0F87AUCemaYVQGxsPLg="
         }
       ],
       iceCandidatePoolSize: 10,
