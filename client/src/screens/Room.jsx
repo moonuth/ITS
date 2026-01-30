@@ -586,12 +586,24 @@ const Room = () => {
     window.addEventListener("beforeunload", handleBeforeUnload);
 
     const init = async () => {
+      // 1. Join Room ngay lập tức để Signaling chạy (Không chờ Camera)
+      console.log("🚀 Emitting room:join immediately...");
+      socket.emit("room:join", { email: myEmail, room: currentRoom });
+
+      // 2. Sau đó mới xin quyền Camera (Song song)
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
         setMyStream(stream);
         myStreamRef.current = stream;
-      } catch (e) { console.warn("No Camera", e); }
-      socket.emit("room:join", { email: myEmail, room: currentRoom });
+
+        // Cập nhật lại stream cho các peer đã kết nối (nếu có)
+        Object.values(peersRef.current).forEach(p => {
+          // Logic addTrack/replaceTrack nếu cần
+        });
+      } catch (e) {
+        console.warn("No Camera/Microphone accesed:", e);
+        showToast("⚠️ Camera/Mic access denied or failed");
+      }
     };
     init();
 
