@@ -113,6 +113,7 @@ const Room = () => {
   const inboundBuffersRef = useRef({});
   const activeTransfers = useRef(new Set());
   const progressTimers = useRef({});
+  const streamPromiseRef = useRef(null);
 
   const handlePin = (id) => setPinnedId(prev => (prev === id ? null : id));
 
@@ -590,9 +591,12 @@ const Room = () => {
       console.log("🚀 Emitting room:join immediately...");
       socket.emit("room:join", { email: myEmail, room: currentRoom });
 
-      // 2. Sau đó mới xin quyền Camera (Song song)
+      // 2. Lưu Promise để handle Race Condition
+      const mediaPromise = navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+      streamPromiseRef.current = mediaPromise;
+
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+        const stream = await mediaPromise;
         setMyStream(stream);
         myStreamRef.current = stream;
 
@@ -634,7 +638,21 @@ const Room = () => {
       socket.emit("user:call", { to: id, offer });
     };
     const handleInCall = async ({ from, offer, fromEmail }) => {
-      const p = createPeer(from, fromEmail, myStreamRef.current, false);
+      console.log(`📞 Incoming call from ${fromEmail}`);
+
+      // FIX RACE CONDITION: Chờ Camera sẵn sàng trước khi trả lời
+      let stream = myStreamRef.current;
+      if (!stream && streamPromiseRef.current) {
+        console.log("⏳ Waiting for camera before answering...");
+        try {
+          stream = await streamPromiseRef.current;
+          console.log("✅ Camera ready, answering call");
+        } catch (e) {
+          console.warn("⚠️ Camera failed, answering without video", e);
+        }
+      }
+
+      const p = createPeer(from, fromEmail, stream, false);
       peersRef.current[from] = p;
       const answer = await p.getAnswer(offer);
       socket.emit("call:accepted", { to: from, ans: answer });
