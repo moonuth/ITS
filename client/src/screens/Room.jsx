@@ -21,8 +21,23 @@ const VideoPlayer = memo(({ stream, isLocal, email, id, onPin, isPinned, isHost,
   useEffect(() => {
     if (videoRef.current && stream) {
       videoRef.current.srcObject = stream;
-      videoRef.current.play().catch(e => console.error("Video play error:", e));
+      // Đảm bảo video element vẫn tồn tại trước khi play
+      const playPromise = videoRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(e => {
+          // Chỉ log nếu không phải lỗi "interrupted" (do unmount)
+          if (e.name !== 'AbortError') {
+            console.warn("Video play failed:", e.name, e.message);
+          }
+        });
+      }
     }
+    return () => {
+      // Cleanup: Dừng video khi component unmount
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
+    };
   }, [stream]);
 
   return (
