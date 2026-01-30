@@ -30,6 +30,42 @@ class PeerService {
       rtcpMuxPolicy: 'require'
     });
 
+    // 🔍 DEBUG: Log ICE servers config
+    console.log("🔧 ICE Servers configured:", this.peer.getConfiguration().iceServers);
+
+    // 🔍 DEBUG: Monitor ICE connection state
+    this.peer.oniceconnectionstatechange = () => {
+      console.log(`🧊 ICE Connection State: ${this.peer.iceConnectionState}`);
+      if (this.peer.iceConnectionState === 'failed') {
+        console.error('❌ ICE Connection FAILED - TURN servers may not be working');
+      }
+      if (this.peer.iceConnectionState === 'connected') {
+        console.log('✅ ICE Connection SUCCESS!');
+      }
+    };
+
+    // 🔍 DEBUG: Monitor ICE gathering state
+    this.peer.onicegatheringstatechange = () => {
+      console.log(`📡 ICE Gathering State: ${this.peer.iceGatheringState}`);
+    };
+
+    // 🔍 DEBUG: Log all ICE candidates
+    this.peer.onicecandidate = (event) => {
+      if (event.candidate) {
+        const c = event.candidate;
+        console.log(`🧊 ICE Candidate found:`, {
+          type: c.type,
+          protocol: c.protocol,
+          address: c.address || c.candidate.split(' ')[4],
+          port: c.port,
+          relatedAddress: c.relatedAddress,
+          candidate: c.candidate
+        });
+      } else {
+        console.log('✅ ICE Gathering complete');
+      }
+    };
+
     this.chatChannel = null;
     this.fileChannel = null;
     this.iceCandidateQueue = [];
