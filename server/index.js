@@ -77,13 +77,18 @@ io.on("connection", (socket) => {
         socket.join(room);
 
         // Host Logic
+        // Robust Host Logic for Reboot/Reconnect scenarios
         const clientsInRoom = io.sockets.adapter.rooms.get(room);
-        if (clientsInRoom.size === 1) {
+        let currentHost = roomToHostMap.get(room);
+
+        // Trường hợp 1: Phòng chưa có Host (phòng mới hoặc server vừa restart)
+        if (!currentHost || !clientsInRoom || clientsInRoom.size === 1) {
             roomToHostMap.set(room, socket.id);
-            socket.emit("host:status", { isHost: true });
-        } else {
-            socket.emit("host:status", { isHost: false, isLocked: lockedRooms.has(room) });
+            currentHost = socket.id;
         }
+
+        const isHost = currentHost === socket.id;
+        socket.emit("host:status", { isHost, isLocked: lockedRooms.has(room) });
 
         const existingUsers = [];
         clientsInRoom.forEach(id => {
