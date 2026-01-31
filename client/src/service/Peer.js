@@ -2,29 +2,46 @@ class PeerService {
   constructor() {
     this.peer = new RTCPeerConnection({
       iceServers: [
-        // STUN Google (tăng độ phủ sóng)
+        // STUN Servers
         { urls: "stun:stun.l.google.com:19302" },
         { urls: "stun:stun1.l.google.com:19302" },
-        { urls: "stun:stun2.l.google.com:19302" },
+        { urls: "stun:relay.metered.ca:80" },
 
-        // 🔥 OPENRELAY METERED (TỐI ƯU NHẤT - FREE, quota cao, ổn định cho WAN)
+        // 🔥 PRIORITY 1: YOUR AZURE TURN SERVER (Most reliable!)
         {
-          urls: "turn:openrelay.metered.ca:80",
-          username: "openrelayproject",
-          credential: "openrelayproject",
+          urls: "turn:20.197.12.68:3478",
+          username: "hphuc",
+          credential: "hphuc123456",
         },
         {
-          urls: "turn:openrelay.metered.ca:443",
-          username: "openrelayproject",
-          credential: "openrelayproject",
-        },
-        {
-          urls: "turn:openrelay.metered.ca:443?transport=tcp",  // TCP fallback cho firewall chặn UDP
-          username: "openrelayproject",
-          credential: "openrelayproject",
+          urls: "turn:20.197.12.68:3478?transport=tcp",
+          username: "hphuc",
+          credential: "hphuc123456",
         },
 
-        // 🔥 TWILIO TURN (Backup - giữ credential của bạn)
+        // 🔥 PRIORITY 2: METERED TURN (Fallback)
+        {
+          urls: "turn:a.relay.metered.ca:80",
+          username: "4e8b0e7f2b4c2e5a3f1d6c8b",
+          credential: "testing123",
+        },
+        {
+          urls: "turn:a.relay.metered.ca:80?transport=tcp",
+          username: "4e8b0e7f2b4c2e5a3f1d6c8b",
+          credential: "testing123",
+        },
+        {
+          urls: "turn:a.relay.metered.ca:443",
+          username: "4e8b0e7f2b4c2e5a3f1d6c8b",
+          credential: "testing123",
+        },
+        {
+          urls: "turn:a.relay.metered.ca:443?transport=tcp",
+          username: "4e8b0e7f2b4c2e5a3f1d6c8b",
+          credential: "testing123",
+        },
+
+        // 🔥 PRIORITY 3: TWILIO TURN (Additional fallback)
         {
           urls: "turn:global.turn.twilio.com:3478?transport=udp",
           username: "f4b4035eaa76f4a55de5f4351567653ee4ff6fa97b50b6b334fcc1be9c27212d",
@@ -34,6 +51,18 @@ class PeerService {
           urls: "turn:global.turn.twilio.com:3478?transport=tcp",
           username: "f4b4035eaa76f4a55de5f4351567653ee4ff6fa97b50b6b334fcc1be9c27212d",
           credential: "w1uxM55V9yVoqyVFjt+mxDBV0F87AUCemaYVQGxsPLg="
+        },
+        {
+          urls: "turn:global.turn.twilio.com:443?transport=tcp",
+          username: "f4b4035eaa76f4a55de5f4351567653ee4ff6fa97b50b6b334fcc1be9c27212d",
+          credential: "w1uxM55V9yVoqyVFjt+mxDBV0F87AUCemaYVQGxsPLg="
+        },
+
+        // 🔥 PRIORITY 4: OPENRELAY (Last resort)
+        {
+          urls: "turn:openrelay.metered.ca:443",
+          username: "openrelayproject",
+          credential: "openrelayproject",
         }
       ],
       iceCandidatePoolSize: 10,

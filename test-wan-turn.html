@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WAN Connection Test - TURN Verification</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .status-bar {
+            display: flex;
+            gap: 15px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+
+        .status-card {
+            flex: 1;
+            min-width: 120px;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            background: #f8f9fa;
+        }
+
+        .status-card.success {
+            background: #d4edda;
+            border: 2px solid #28a745;
+        }
+
+        .status-card.error {
+            background: #f8d7da;
+            border: 2px solid #dc3545;
+        }
+
+        .status-card .label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .status-card .value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .log-area {
+            background: #263238;
+            color: #aed581;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .log-line {
+            margin-bottom: 5px;
+        }
+
+        .log-line.success {
+            color: #4caf50;
+        }
+
+        .log-line.error {
+            color: #f44336;
+        }
+
+        .log-line.warning {
+            color: #ff9800;
+        }
+
+        .log-line.info {
+            color: #2196f3;
+        }
+
+        .verdict {
+            margin-top: 30px;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .verdict.pass {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .verdict.fail {
+            background: linear-gradient(135deg, #ee0979 0%, #ff6a00 100%);
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🔥 WAN Connection Test</h1>
+        <p style="color: #666; margin-bottom: 20px;">
+            Test này sẽ verify xem TURN servers có hoạt động cho WAN connection không
+        </p>
+
+        <button id="startBtn" onclick="startTest()">🚀 Bắt đầu Test</button>
+
+        <div class="status-bar">
+            <div class="status-card" id="stunCard">
+                <div class="label">STUN</div>
+                <div class="value">-</div>
+            </div>
+            <div class="status-card" id="relayCard">
+                <div class="label">RELAY (TURN)</div>
+                <div class="value">-</div>
+            </div>
+            <div class="status-card" id="stateCard">
+                <div class="label">ICE State</div>
+                <div class="value" style="font-size: 14px;">-</div>
+            </div>
+        </div>
+
+        <div class="log-area" id="logArea"></div>
+        <div id="verdict"></div>
+    </div>
+
+    <script>
+        const logArea = document.getElementById('logArea');
+        const startBtn = document.getElementById('startBtn');
+
+        const TURN_SERVERS = [
+            {
+                urls: "turn:a.relay.metered.ca:80",
+                username: "4e8b0e7f2b4c2e5a3f1d6c8b",
+                credential: "testing123",
+            },
+            {
+                urls: "turn:a.relay.metered.ca:80?transport=tcp",
+                username: "4e8b0e7f2b4c2e5a3f1d6c8b",
+                credential: "testing123",
+            },
+            {
+                urls: "turn:a.relay.metered.ca:443",
+                username: "4e8b0e7f2b4c2e5a3f1d6c8b",
+                credential: "testing123",
+            },
+            {
+                urls: "turn:a.relay.metered.ca:443?transport=tcp",
+                username: "4e8b0e7f2b4c2e5a3f1d6c8b",
+                credential: "testing123",
+            },
+            {
+                urls: "turn:global.turn.twilio.com:3478?transport=udp",
+                username: "f4b4035eaa76f4a55de5f4351567653ee4ff6fa97b50b6b334fcc1be9c27212d",
+                credential: "w1uxM55V9yVoqyVFjt+mxDBV0F87AUCemaYVQGxsPLg="
+            },
+            {
+                urls: "turn:global.turn.twilio.com:3478?transport=tcp",
+                username: "f4b4035eaa76f4a55de5f4351567653ee4ff6fa97b50b6b334fcc1be9c27212d",
+                credential: "w1uxM55V9yVoqyVFjt+mxDBV0F87AUCemaYVQGxsPLg="
+            },
+            {
+                urls: "turn:openrelay.metered.ca:443",
+                username: "openrelayproject",
+                credential: "openrelayproject"
+            }
+        ];
+
+        let stats = {
+            host: 0,
+            srflx: 0,
+            relay: 0
+        };
+
+        function log(message, type = 'info') {
+            const line = document.createElement('div');
+            line.className = `log-line ${type}`;
+            const timestamp = new Date().toLocaleTimeString();
+            line.textContent = `[${timestamp}] ${message}`;
+            logArea.appendChild(line);
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        function updateCard(id, value, isSuccess = null) {
+            const card = document.getElementById(id);
+            card.querySelector('.value').textContent = value;
+            if (isSuccess === true) {
+                card.className = 'status-card success';
+            } else if (isSuccess === false) {
+                card.className = 'status-card error';
+            }
+        }
+
+        async function startTest() {
+            startBtn.disabled = true;
+            logArea.innerHTML = '';
+            document.getElementById('verdict').innerHTML = '';
+            stats = { host: 0, srflx: 0, relay: 0 };
+
+            log('=== BẮT ĐẦU TEST TURN SERVERS ===', 'info');
+            log('Đang tạo PeerConnection...', 'info');
+
+            const pc = new RTCPeerConnection({
+                iceServers: [
+                    { urls: "stun:stun.l.google.com:19302" },
+                    ...TURN_SERVERS
+                ],
+                iceCandidatePoolSize: 10
+            });
+
+            pc.onicecandidate = (event) => {
+                if (event.candidate) {
+                    const c = event.candidate;
+                    stats[c.type]++;
+
+                    const emoji = {
+                        'host': '🏠',
+                        'srflx': '🌐',
+                        'relay': '🔥'
+                    };
+
+                    const typeLabel = {
+                        'host': 'HOST',
+                        'srflx': 'SRFLX (STUN)',
+                        'relay': 'RELAY (TURN)'
+                    };
+
+                    const logType = c.type === 'relay' ? 'success' : 'info';
+                    log(`${emoji[c.type]} ${typeLabel[c.type]} - ${c.protocol.toUpperCase()} - ${c.address}:${c.port}`, logType);
+
+                    // Update cards
+                    updateCard('stunCard', stats.srflx, stats.srflx > 0);
+                    updateCard('relayCard', stats.relay, stats.relay > 0);
+                } else {
+                    log('✅ ICE Gathering hoàn tất!', 'success');
+                    showVerdict();
+                }
+            };
+
+            pc.onicegatheringstatechange = () => {
+                log(`📡 ICE Gathering State: ${pc.iceGatheringState}`, 'info');
+            };
+
+            pc.oniceconnectionstatechange = () => {
+                const state = pc.iceConnectionState;
+                log(`🧊 ICE Connection State: ${state}`, state === 'failed' ? 'error' : 'info');
+                updateCard('stateCard', state, state === 'connected' || state === 'completed');
+            };
+
+            try {
+                const dc = pc.createDataChannel("test");
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+                log('✅ Đã tạo offer, đang thu thập ICE candidates...', 'success');
+            } catch (error) {
+                log(`❌ LỖI: ${error.message}`, 'error');
+                startBtn.disabled = false;
+            }
+        }
+
+        function showVerdict() {
+            const verdictDiv = document.getElementById('verdict');
+
+            if (stats.relay > 0) {
+                verdictDiv.className = 'verdict pass';
+                verdictDiv.innerHTML = `
+                    🎉 <strong>TURN SERVERS HOẠT ĐỘNG!</strong><br>
+                    <span style="font-size: 14px; font-weight: normal;">
+                        Tìm thấy ${stats.relay} relay candidates. WAN connection sẽ work!<br>
+                        Host: ${stats.host} | STUN: ${stats.srflx} | TURN: ${stats.relay}
+                    </span>
+                `;
+                log('🎉 KẾT LUẬN: TURN SERVERS OK - WAN connection sẽ work!', 'success');
+            } else {
+                verdictDiv.className = 'verdict fail';
+                verdictDiv.innerHTML = `
+                    ❌ <strong>TURN SERVERS KHÔNG HOẠT ĐỘNG!</strong><br>
+                    <span style="font-size: 14px; font-weight: normal;">
+                        Không tìm thấy relay candidates. WAN connection sẽ FAIL!<br>
+                        Host: ${stats.host} | STUN: ${stats.srflx} | TURN: ${stats.relay}<br><br>
+                        <strong>Giải pháp:</strong><br>
+                        1. Thử kết nối từ mạng khác (có thể bị firewall chặn)<br>
+                        2. Sử dụng TURN server khác hoặc tự host Coturn<br>
+                        3. Kiểm tra credentials TURN servers
+                    </span>
+                `;
+                log('❌ KẾT LUẬN: TURN SERVERS FAILED - WAN connection sẽ KHÔNG work!', 'error');
+                log('⚠️ Cần phải fix TURN trước khi deploy!', 'warning');
+            }
+
+            startBtn.disabled = false;
+        }
+    </script>
+</body>
+
+</html>
