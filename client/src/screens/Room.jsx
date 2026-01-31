@@ -559,7 +559,12 @@ const Room = () => {
     const peer = new PeerService();
     if (stream) stream.getTracks().forEach(track => peer.peer.addTrack(track, stream));
 
-    peer.peer.onicecandidate = (e) => e.candidate && socket.emit("peer:candidate", { candidate: e.candidate, to: id });
+    // Keep Peer.js logs + add socket emit
+    const originalHandler = peer.peer.onicecandidate;
+    peer.peer.onicecandidate = (e) => {
+      if (originalHandler) originalHandler(e); // Call Peer.js handler first (for logs)
+      if (e.candidate) socket.emit("peer:candidate", { candidate: e.candidate, to: id });
+    };
     peer.peer.ontrack = (event) => {
       setRemoteStreams(prev => prev.find(p => p.id === id) ? prev : [...prev, { id, email, stream: event.streams[0] }]);
     };
