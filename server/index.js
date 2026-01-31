@@ -57,17 +57,27 @@ io.on("connection", (socket) => {
         const oldId = emailToSocketIdMap.get(email);
         if (oldId && oldId !== socket.id) {
             const oldRoom = socketIdToRoomMap.get(oldId);
+
+            // Cleanup maps FIRST
+            emailToSocketIdMap.delete(email);
+            socketIdToEmailMap.delete(oldId);
+            socketIdToRoomMap.delete(oldId);
+
             // Thông báo cho session cũ
             io.to(oldId).emit("session:duplicate", {
                 message: "Your account is being used on another device"
             });
-            // Xóa khỏi phòng
+
+            // Thông báo phòng user left
             if (oldRoom) {
                 io.to(oldRoom).emit("user:left", { id: oldId, email });
             }
+
             // Force disconnect session cũ
             const oldSocket = io.sockets.sockets.get(oldId);
-            if (oldSocket) oldSocket.disconnect(true);
+            if (oldSocket) {
+                oldSocket.disconnect(true);
+            }
         }
 
         emailToSocketIdMap.set(email, socket.id);

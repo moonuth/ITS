@@ -756,6 +756,13 @@ const Room = () => {
     };
 
     const handleSessionDuplicate = ({ message }) => {
+      // Cleanup để tránh memory leak
+      if (myStreamRef.current) {
+        myStreamRef.current.getTracks().forEach(t => t.stop());
+      }
+      Object.values(peersRef.current).forEach(p => p.peer.close());
+      peersRef.current = {};
+
       showToast(`⚠️ ${message}`);
       setTimeout(() => {
         window.location.href = "/";
