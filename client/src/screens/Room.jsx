@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, memo, useCallback } from "react";
 import { useSocket } from "../context/SocketProvider";
 import { useParams, useNavigate } from "react-router-dom";
-import PeerService from "../services/Peer";
+import PeerService from "../service/Peer";
 import '../Room.css';
 
 // Xóa bỏ logic reload check cũ kỹ gây lỗi
